@@ -10,17 +10,37 @@ with open("kemiskinan_model.pkl", "rb") as f:
 # Load nama fitur
 feature_names = pd.read_csv("feature_columns.txt", header=None).squeeze().tolist()
 
-# Konfigurasi halaman
-st.set_page_config(page_title="Klasifikasi Kemiskinan", layout="centered")
-st.title("🧮 Klasifikasi Tingkat Kemiskinan")
+# Load dataset untuk dapatkan min-max tiap fitur
+# (jika tidak ada, kamu bisa buat sendiri manual)
+try:
+    df = pd.read_csv("Klasifikasi Tingkat Kemiskinan di Indonesia.csv", sep=';')
+    df = df.select_dtypes(include=['float64', 'int64'])  # hanya numerik
+except:
+    df = None  # fallback kalau dataset tidak tersedia
 
+# UI config
+st.set_page_config(page_title="Klasifikasi Kemiskinan", layout="centered")
+st.title("🧮 Aplikasi Klasifikasi Tingkat Kemiskinan")
 st.markdown("Masukkan data indikator sosial ekonomi melalui sidebar, lalu sistem akan memprediksi tingkat kemiskinan.")
 
 # Sidebar input
 st.sidebar.header("📝 Input Data")
 user_input = []
+
 for feature in feature_names:
-    value = st.sidebar.number_input(f"{feature}", min_value=0.0, format="%.2f")
+    if df is not None and feature in df.columns:
+        min_val = float(df[feature].min())
+        max_val = float(df[feature].max())
+    else:
+        min_val, max_val = 0.0, 100.0  # fallback range
+
+    value = st.sidebar.slider(
+        label=feature,
+        min_value=round(min_val, 2),
+        max_value=round(max_val, 2),
+        value=round((min_val + max_val) / 2, 2),
+        step=0.1
+    )
     user_input.append(value)
 
 # Prediksi
